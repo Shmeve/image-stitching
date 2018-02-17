@@ -4,31 +4,31 @@
 using namespace cv;
 using namespace std;
 
-const int SIZE = 7;
+const int SIZE = 27;
 const int MID_POINT = SIZE/2;
 
 Mat harrisCornerDetector(Mat input);
-Mat nonMaximaSuppression(Mat input);
+Mat nonMaximaSuppression(Mat input, Mat original);
+Mat featureDescription(Mat original, Mat features);
 
 int main() {
     //Mat image = imread("images/graf/img1.ppm", IMREAD_UNCHANGED);
     Mat image = imread("images/yosemite/Yosemite2.jpg", IMREAD_COLOR);
     //Mat image = imread("images/checkers.png", IMREAD_COLOR);
     Mat gray = Mat::zeros(image.size(), CV_32F);
-    Mat output = Mat::zeros(image.size(), CV_32F);;
+    Mat output = Mat::zeros(image.size(), CV_32F);
 
     imshow("Original", image);
-    image.convertTo(image, CV_32F);
     cvtColor(image, gray, COLOR_BGR2GRAY);
-
-    //output.convertTo(output, CV_8U);
-    //imshow("Gray 32", output);
+    gray.convertTo(gray, CV_32F);
+    gray *= 1./255;
 
     Mat h = harrisCornerDetector(gray);
-    output = nonMaximaSuppression(h);
+    output = nonMaximaSuppression(h, image);
 
-    imshow("h", h);
-    imshow("output", output);
+    imshow("Harris Corners", image);
+
+    featureDescription(gray, output);
 
     waitKey(0);
 
@@ -46,14 +46,14 @@ Mat harrisCornerDetector(Mat input) {
     Mat Ix = Mat(input.size(), CV_32F);
     Mat Iy = Mat(input.size(), CV_32F);
     Mat Ixy = Mat(input.size(), CV_32F);
-    Mat C = Mat(input.size(), CV_32F);          // C = det(H)/Trace(H)
-    Mat result = Mat(input.size(), CV_32F);     // Final result with non-maximum suppression
+    Mat C = Mat::zeros(input.size(), CV_32F);          // C = det(H)/Trace(H)
+    Mat result = Mat::zeros(input.size(), CV_32F);     // Final result with non-maximum suppression
 
     // Sobel Kernel
     float sobelFilter[] = {
-            1.0/8, 0, -1.0/8,
-            2.0/8, 0, -2.0/8,
-            1.0/8, 0, -1.0/8
+            1.0/6, 0, -1.0/6,
+            2.0/6, 0, -2.0/6,
+            1.0/6, 0, -1.0/6
     };
 
     // Sobel Filters
@@ -63,57 +63,47 @@ Mat harrisCornerDetector(Mat input) {
     // Compute Ix, Iy, Ixy derivatives using Sobel
     filter2D(input, Ix, -1, s_h);
     filter2D(input, Iy, -1, s_v);
-    multiply(Ix, Iy, Ixy);
 
+    // Create Harris matrix
+    for (int i = 0; i < input.rows; i++) {
+        for (int j = 0; j < input.cols; j++) {
+            float x = Ix.at<float>(i,j);
+            float y = Iy.at<float>(i,j);
+            Ix.at<float>(i,j) = x * x;      // IxIx
+            Iy.at<float>(i,j) = y * y;      // IxIy
+            Ixy.at<float>(i,j) = x * y;     // IxIy
+        }
+    }
 
     // Apply Gaussian
     GaussianBlur(Ix, Ix, Size(3, 3), 1);
     GaussianBlur(Iy, Iy, Size(3, 3), 1);
     GaussianBlur(Ixy, Ixy, Size(3, 3), 1);
 
-    // Create Harris matrix
-    pow(Ix, 2, Ix); // Ix Ix
-    pow(Iy, 2, Iy); // Iy Iy
-
-    // Compute sum of products of the derivatives
-    Mat IxSum;
-    Mat IySum;
-    Mat IxySum;
-    float sumKernel[] = {
-            1.0/9, 1.0/9, 1.0/9,
-            1.0/9, 1.0/9, 1.0/9,
-            1.0/9, 1.0/9, 1.0/9
-    };
-
-    Mat sumOfProducts = Mat(3, 3, CV_32F, sumKernel);
-
-    filter2D(Ix, IxSum, -1, sumOfProducts);
-    filter2D(Iy, IySum, -1, sumOfProducts);
-    filter2D(Ixy, IxySum, -1, sumOfProducts);
-
     // Calculate corner strength matrix
-    for (int i = MID_POINT; i < input.rows - MID_POINT; i++) {
-        for (int j = MID_POINT; j < input.cols - MID_POINT; j++) {
-            float a = IxSum.at<float>(i, j);
-            float b = IxySum.at<float>(i, j);
-            float c = IxySum.at<float>(i, j);
-            float d = IySum.at<float>(i, j);
+    for (int i = 0; i < input.rows; i++) {
+        for (int j = 0; j < input.cols; j++) {
+            float a = Ix.at<float>(i, j);
+            float b = Ixy.at<float>(i, j);
+            float c = Ixy.at<float>(i, j);
+            float d = Iy.at<float>(i, j);
+            float cornerStrength;
+
 
             // c(H) = det/trace, det = ad-bc, trace = a+d
-            float cornerStrength = (a*d - b*c)/(a + d);
+            if (a + d == 0) {
+                cornerStrength = 0;
+            }
+            else {
+                cornerStrength = ((a*d)-(b*c))/(a + d);
+            }
 
             // Apply threshold
-            if (cornerStrength > 10) {
+            if (cornerStrength > 0.005) {
                 C.at<float>(i, j) = cornerStrength;
             }
         }
     }
-
-    // Display/Test
-    /*imshow("Ix", Ix);
-    imshow("Iy", Iy);
-    imshow("Ixy", Ixy);
-    imshow("C", C);*/
 
     waitKey(0);
 
@@ -126,7 +116,7 @@ Mat harrisCornerDetector(Mat input) {
  * @param input Partially complete Harris Corner matrix with corner strength values
  * @return Mat (CV_32F)
  */
-Mat nonMaximaSuppression(Mat input) {
+Mat nonMaximaSuppression(Mat input, Mat original) {
     Mat suppressed = Mat(input.size(), CV_32F);
     float max = 0;
     float current;
@@ -149,9 +139,60 @@ Mat nonMaximaSuppression(Mat input) {
                 }
             }
 
-            suppressed.at<float>(maxRow, maxCol) = max;
+            if (max > 0) {
+                suppressed.at<float>(maxRow, maxCol) = max;
+                circle(original, Point(maxCol, maxRow), 4, Scalar(0, 0, 0, 255));
+            }
         }
     }
 
     return suppressed;
+}
+
+/**
+ * Describe features using SIFT descriptors for feature points
+ *
+ * @param original source image
+ * @param features non-maximally suppressed harris matrix of features
+ * @return
+ */
+Mat featureDescription(Mat original, Mat features) {
+    Mat gradientImage = Mat(original.size(), CV_32F);
+    Mat Ix = Mat(original.size(), CV_32F);
+    Mat Iy = Mat(original.size(), CV_32F);
+
+    // Sobel Kernel
+    float sobelFilter[] = {
+            1.0/6, 0, -1.0/6,
+            2.0/6, 0, -2.0/6,
+            1.0/6, 0, -1.0/6
+    };
+
+    Mat s_v = Mat(3, 3, CV_32F, sobelFilter);
+    Mat s_h = s_v.t();
+
+    // Gradient Images
+    filter2D(original, Ix, -1, s_h);
+    filter2D(original, Iy, -1, s_v);
+
+    imshow("Ix", Ix);
+    imshow("Iy", Iy);
+
+    int test = 25;
+    int magnitude[4][4];
+    int angle[4][4];
+    float m, a, x, y;
+
+    for (int i = test; i < test+4; i++) {
+        for (int j = test; j < test+4; j++) {
+            x = Ix.at<float>(i, j);
+            y = Iy.at<float>(i, j);
+            m = sqrt((x*x)+(y*y));
+            a = atan(x/y);
+
+            cout << x << " " << y << " " << m << " " << a << endl;
+        }
+    }
+
+    return Mat();
 }
