@@ -4,7 +4,7 @@ project(feature_detection)
 set(CMAKE_CXX_STANDARD 11)
 
 find_package(OpenCV REQUIRED)
-set(SOURCE_FILES src/main.cpp)
+set(SOURCE_FILES src/main.cpp src/SIFT/SIFTDescriptor.cpp src/SIFT/SIFTDescriptor.h)
 add_executable(feature_detection ${SOURCE_FILES})
 include_directories(${OpenCV_INCLUDE_DIRS})
 target_link_libraries(feature_detection ${OpenCV_LIBS})

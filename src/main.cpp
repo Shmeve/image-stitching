@@ -1,5 +1,7 @@
 #include <iostream>
+#include <vector>
 #include <opencv2/opencv.hpp>
+#include "SIFT/SIFTDescriptor.h"
 
 using namespace cv;
 using namespace std;
@@ -10,6 +12,8 @@ const int MID_POINT = SIZE/2;
 Mat harrisCornerDetector(Mat input);
 Mat nonMaximaSuppression(Mat input, Mat original);
 Mat featureDescription(Mat original, Mat features);
+
+vector<SIFTDescriptor> featureDescriptions = vector<SIFTDescriptor>();
 
 int main() {
     //Mat image = imread("images/graf/img1.ppm", IMREAD_UNCHANGED);
@@ -99,7 +103,7 @@ Mat harrisCornerDetector(Mat input) {
             }
 
             // Apply threshold
-            if (cornerStrength > 0.005) {
+            if (cornerStrength > 0.008) {
                 C.at<float>(i, j) = cornerStrength;
             }
         }
@@ -157,6 +161,10 @@ Mat nonMaximaSuppression(Mat input, Mat original) {
  * @return
  */
 Mat featureDescription(Mat original, Mat features) {
+    //const int WINDOW_SIZE = 16;
+    const int MID = WINDOW_SIZE/2;
+    const int GRID_SIZE = 4;
+
     Mat gradientImage = Mat(original.size(), CV_32F);
     Mat Ix = Mat(original.size(), CV_32F);
     Mat Iy = Mat(original.size(), CV_32F);
@@ -175,22 +183,29 @@ Mat featureDescription(Mat original, Mat features) {
     filter2D(original, Ix, -1, s_h);
     filter2D(original, Iy, -1, s_v);
 
-    imshow("Ix", Ix);
-    imshow("Iy", Iy);
+    for (int i = MID; i < original.rows - MID; i++) {
+        for (int j = MID; j < original.cols - MID; j++) {
+            float point = features.at<float>(i,j);
 
-    int test = 25;
-    int magnitude[4][4];
-    int angle[4][4];
-    float m, a, x, y;
+            if (point > 0) {
+                float x, y;
+                float windowX[WINDOW_SIZE][WINDOW_SIZE];
+                float windowY[WINDOW_SIZE][WINDOW_SIZE];
 
-    for (int i = test; i < test+4; i++) {
-        for (int j = test; j < test+4; j++) {
-            x = Ix.at<float>(i, j);
-            y = Iy.at<float>(i, j);
-            m = sqrt((x*x)+(y*y));
-            a = atan(x/y);
+                for (int k = i-MID; k < i+MID-1; k++) {
+                    for (int l = j-MID; l < j+MID-1; l++) {
+                        x = Ix.at<float>(k, l);
+                        y = Iy.at<float>(k, l);
+                        windowX[k-(i-MID)][l-(j-MID)] = x;
+                        windowY[k-(i-MID)][l-(j-MID)] = y;
+                    }
+                }
 
-            cout << x << " " << y << " " << m << " " << a << endl;
+                SIFTDescriptor d = SIFTDescriptor(windowX, windowY);
+                d.generateHistograms();
+
+                featureDescriptions.push_back(d);
+            }
         }
     }
 
