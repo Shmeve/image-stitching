@@ -24,6 +24,13 @@ int main() {
     return 0;
 }
 
+/**
+ * Detect interest points within two images and link matching pairs
+ *
+ * @param img1 Starting image to detect interest points
+ * @param img2 Corresponding image to detect matching interest points
+ * @return Mat containing both inputs with highlighted interest points and matches
+ */
 Mat matchFeatures(string img1, string img2) {
     const double DISTANCE_THRESHOLD = 3.0;
 
@@ -71,7 +78,8 @@ Mat matchFeatures(string img1, string img2) {
             // Match is unambiguous
             if (ratioScore < 0.005) {
                 line(matches, Point(descriptions.at(i).getFeatureCol(), descriptions.at(i).getFeatureRow()),
-                     Point(bestDescriptor->getFeatureCol()+h.cols, bestDescriptor->getFeatureRow()), Scalar(0, 0, 0, 255));
+                     Point(bestDescriptor->getFeatureCol()+h.cols, bestDescriptor->getFeatureRow()),
+                     Scalar(0, 175, 0, 255), 1);
             }
         }
     }

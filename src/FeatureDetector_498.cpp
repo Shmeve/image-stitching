@@ -3,6 +3,11 @@
 using namespace cv;
 using namespace std;
 
+/**
+ * Constructor
+ *
+ * @param file File path to image being processed
+ */
 FeatureDetector_498::FeatureDetector_498(string file) {
     // Init original image
     this->raw = imread(file, IMREAD_COLOR);
@@ -24,7 +29,7 @@ FeatureDetector_498::FeatureDetector_498(string file) {
             1.0/6, 0, -1.0/6
     };
 
-    // Sobel Filters
+    // Apply Sobel Filters
     Mat s_v = Mat(3, 3, CV_32F, sobelFilter);
     Mat s_h = s_v.t();      // Transpose of horizontal Sobel matrix
 
@@ -45,10 +50,11 @@ FeatureDetector_498::FeatureDetector_498(string file) {
  * @return Mat (CV_32F)
  */
 Mat FeatureDetector_498::harrisCornerDetector() {
-    Mat Ixx = Mat::zeros(Ix.size(), CV_32F);
-    Mat Iyy = Mat::zeros(Iy.size(), CV_32F);
-    Mat Ixy = Mat::zeros(Ix.size(), CV_32F);
-    Mat Corners = Mat::zeros(image.size(), CV_32F);
+    // Init and clear matrices
+    Mat Ixx = Mat::zeros(Ix.size(), CV_32F);        // IxIx
+    Mat Iyy = Mat::zeros(Iy.size(), CV_32F);        // IyIy
+    Mat Ixy = Mat::zeros(Ix.size(), CV_32F);        // IxIy
+    Mat Corners = Mat::zeros(image.size(), CV_32F); // C = det(H) - trace(h)
 
     // Create Harris matrix components
     for (int i = 0; i < gray.rows; i++) {
@@ -95,7 +101,7 @@ Mat FeatureDetector_498::harrisCornerDetector() {
 }
 
 /**
- * Suppress non maximum values in a matrix of corner strength values from Harris Corner Detection
+ * Suppress non maximum values in a Corner Strength matrix from Harris Corner Detection
  *
  * @param harrisCorners non-suppressed corner strength values from harris corner detector
  * @return Mat (CV_32F)
@@ -107,10 +113,12 @@ Mat FeatureDetector_498::nonMaximaSuppression(Mat harrisCorners) {
     int maxRow = 0;
     int maxCol = 0;
 
+    // Iterate through image jumping by window size
     for (int i = SUPPRESSION_MID; i < gray.rows - SUPPRESSION_MID; i += SUPPRESSION_WINDOW) {
         for (int j = SUPPRESSION_MID; j < gray.cols - SUPPRESSION_MID; j += SUPPRESSION_WINDOW) {
             max = 0;
 
+            // Perform suppression within the window
             for (int k = i - SUPPRESSION_MID; k <= i + SUPPRESSION_MID; k++) {
                 for (int l = j - SUPPRESSION_MID; l <= j + SUPPRESSION_MID; l++) {
                     current = harrisCorners.at<float>(k, l);
@@ -123,6 +131,7 @@ Mat FeatureDetector_498::nonMaximaSuppression(Mat harrisCorners) {
                 }
             }
 
+            // Maintain maximum value and draw circle on the originating image to highlight interest point
             if (max > 0) {
                 s.at<float>(maxRow, maxCol) = max;
                 circle(image, Point(maxCol, maxRow), 4, Scalar(0, 0, 0, 255));

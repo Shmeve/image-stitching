@@ -4,8 +4,10 @@
 /**
  * Constructor
  *
- * @param x window of x derivative values
- * @param y window of y derivative values
+ * @param x Window of x derivative values
+ * @param y Window of y derivative values
+ * @param row Row position of originating interest point
+ * @param col Column position of originating interest point
  */
 SIFTDescriptor::SIFTDescriptor(float x[WINDOW_SIZE][WINDOW_SIZE], float y[WINDOW_SIZE][WINDOW_SIZE], int row, int col) {
     // Init neighbourhood window
@@ -34,6 +36,7 @@ SIFTDescriptor::SIFTDescriptor(float x[WINDOW_SIZE][WINDOW_SIZE], float y[WINDOW
  * @return void
  */
 void SIFTDescriptor::generateHistograms() {
+    const float MAGNITUDE_THRESHOLD = 0.2;
     float m;
     int a;
 
@@ -47,11 +50,13 @@ void SIFTDescriptor::generateHistograms() {
             float x = windowX[i][j];
             float y = windowY[i][j];
 
+            // Calculate magnitude, angle, bin placement
             m = sqrt((x*x)+(y*y));
-            a = (int) ((atan(y/x)*180)/M_PI) % 360;
+            a = (int) ((atan(y/x)*180)/M_PI) % 360; // Angle in degrees
             bin = indexForTheta(a);
 
-            bins[gIndex][bin] += (m > 0.2) ? 0.2 : m;
+            // Threshold
+            bins[gIndex][bin] += (m > MAGNITUDE_THRESHOLD) ? MAGNITUDE_THRESHOLD : m;
         }
     }
 }
@@ -59,7 +64,7 @@ void SIFTDescriptor::generateHistograms() {
 /**
  * Maps theta to a bin index
  *
- * @param theta calculated angle from -pi/2 to pi/2
+ * @param theta Calculated angle from 0 to 360 degrees
  * @return int
  */
 int SIFTDescriptor::indexForTheta(float theta) {
