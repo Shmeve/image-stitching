@@ -7,6 +7,7 @@ FeatureDetector_498::FeatureDetector_498(string file) {
     // Init original image
     this->raw = imread(file, IMREAD_COLOR);
     this->image = imread(file, IMREAD_COLOR);
+    this->gray = Mat::zeros(image.size(), image.type());
 
     // Init gray scale image
     cvtColor(this->image, this->gray, COLOR_BGR2GRAY);
@@ -100,7 +101,7 @@ Mat FeatureDetector_498::harrisCornerDetector() {
  * @return Mat (CV_32F)
  */
 Mat FeatureDetector_498::nonMaximaSuppression(Mat harrisCorners) {
-    Mat s = Mat(image.size(), CV_32F);
+    Mat s = Mat::zeros(image.size(), CV_32F);
     float max = 0;
     float current;
     int maxRow = 0;
@@ -133,37 +134,6 @@ Mat FeatureDetector_498::nonMaximaSuppression(Mat harrisCorners) {
 }
 
 /**
- * Creates descriptions of feature interest points produced by harris corner detection
- */
-void FeatureDetector_498::generateFeatureDescriptions() {
-    for (int i = DESCRIPTOR_MID; i < gray.rows - DESCRIPTOR_MID; i++) {
-        for (int j = DESCRIPTOR_MID; j < gray.cols - DESCRIPTOR_MID; j++) {
-            float point = suppressed.at<float>(i,j);
-
-            if (point > 0) {
-                float x, y;
-                float windowX[DESCRIPTOR_WINDOW][DESCRIPTOR_WINDOW];
-                float windowY[DESCRIPTOR_WINDOW][DESCRIPTOR_WINDOW];
-
-                for (int k = i-DESCRIPTOR_MID; k < i+DESCRIPTOR_MID-1; k++) {
-                    for (int l = j-DESCRIPTOR_MID; l < j+DESCRIPTOR_MID-1; l++) {
-                        x = Ix.at<float>(k, l);
-                        y = Iy.at<float>(k, l);
-                        windowX[k-(i-DESCRIPTOR_MID)][l-(j-DESCRIPTOR_MID)] = x;
-                        windowY[k-(i-DESCRIPTOR_MID)][l-(j-DESCRIPTOR_MID)] = y;
-                    }
-                }
-
-                SIFTDescriptor d = SIFTDescriptor(windowX, windowY);
-                d.generateHistograms();
-
-                descriptors.push_back(d);
-            }
-        }
-    }
-}
-
-/**
  * Driver method for feature detection using Harris corner detection and non-maximal suppression
  *
  * @return Mat (CV_8U)
@@ -181,12 +151,41 @@ Mat FeatureDetector_498::detectFeatures() {
 }
 
 /**
- * Driver method to create feature descriptions for interest points
+ * Creates descriptions of feature interest points produced by harris corner detection
  *
  * @return vector<SIFTDescriptor>
  */
 vector<SIFTDescriptor> FeatureDetector_498::describeFeatures() {
-    generateFeatureDescriptions();
+    imshow("suppressed", suppressed);
+    int count = 0;
+    for (int i = DESCRIPTOR_MID; i < suppressed.rows - DESCRIPTOR_MID; i++) {
+        for (int j = DESCRIPTOR_MID; j < suppressed.cols - DESCRIPTOR_MID; j++) {
+            float point = suppressed.at<float>(i,j);
+
+            if (point > 0.0) {
+                float x, y;
+                float windowX[DESCRIPTOR_WINDOW][DESCRIPTOR_WINDOW];
+                float windowY[DESCRIPTOR_WINDOW][DESCRIPTOR_WINDOW];
+
+                for (int k = i-DESCRIPTOR_MID; k < i+DESCRIPTOR_MID; k++) {
+                    for (int l = j-DESCRIPTOR_MID; l < j+DESCRIPTOR_MID; l++) {
+                        x = Ix.at<float>(k, l);
+                        y = Iy.at<float>(k, l);
+                        windowX[k-(i-DESCRIPTOR_MID)][l-(j-DESCRIPTOR_MID)] = x;
+                        windowY[k-(i-DESCRIPTOR_MID)][l-(j-DESCRIPTOR_MID)] = y;
+                    }
+                }
+
+                SIFTDescriptor d = SIFTDescriptor(windowX, windowY);
+                d.generateHistograms();
+                count++;
+
+                descriptors.push_back(d);
+            }
+        }
+    }
+
+    cout << count << endl;
 
     return descriptors;
 }

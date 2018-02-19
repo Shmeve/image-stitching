@@ -24,5 +24,13 @@ int main() {
     vector<SIFTDescriptor> descriptions2 = fd2.describeFeatures();
 
 
+    // Match?
+    for (int i = 0; i < descriptions.size(); i++) {
+        for (int j = 0; j < descriptions2.size(); j++) {
+            cout << descriptions2.at(j).SSD(descriptions.at(i)) << endl;
+        }
+    }
+
+
     return 0;
 }

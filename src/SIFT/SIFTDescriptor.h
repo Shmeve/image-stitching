@@ -14,4 +14,5 @@ public:
     SIFTDescriptor(float x[WINDOW_SIZE][WINDOW_SIZE], float y[WINDOW_SIZE][WINDOW_SIZE]);
     void generateHistograms();
     int indexForTheta(float theta);
+    double SSD(SIFTDescriptor f2);
 };

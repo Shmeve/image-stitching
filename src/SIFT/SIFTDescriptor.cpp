@@ -14,6 +14,12 @@ SIFTDescriptor::SIFTDescriptor(float x[WINDOW_SIZE][WINDOW_SIZE], float y[WINDOW
             this->windowY[i][j] = y[i][j];
         }
     }
+
+    for (int i = 0; i < WINDOW_SIZE; i++) {
+        for (int j = 0; j < NUMBER_OF_BINS; j++) {
+            bins[i][j] = 0.0;
+        }
+    }
 }
 
 /**
@@ -22,23 +28,24 @@ SIFTDescriptor::SIFTDescriptor(float x[WINDOW_SIZE][WINDOW_SIZE], float y[WINDOW
  * @return void
  */
 void SIFTDescriptor::generateHistograms() {
-    float m, a;
+    float m;
+    int a;
 
     for (int i = 0; i < WINDOW_SIZE; i++) {
         int gX = i/4;               // X Grid Value
 
         for (int j = 0; j < WINDOW_SIZE; j++) {
             int gY = j/4;           // Y Grid Value
-            int gIndex = (gX/4)+gY; // Map 2D position to 1D bins array
+            int gIndex = gX*4+gY;   // Map 2D position to 1D bins array
             int bin;                // Bin index
             float x = windowX[i][j];
             float y = windowY[i][j];
 
             m = sqrt((x*x)+(y*y));
-            a = atan(x/y);
+            a = (int) ((atan(y/x)*180)/M_PI) % 360;
             bin = indexForTheta(a);
 
-            bins[gIndex][bin] += m;
+            bins[gIndex][bin] += (m > 0.2) ? 0.2 : m;
         }
     }
 }
@@ -50,21 +57,37 @@ void SIFTDescriptor::generateHistograms() {
  * @return int
  */
 int SIFTDescriptor::indexForTheta(float theta) {
-    if (theta < -M_PI/4) {
+    if (theta < 0) {
+        theta = 360 + theta;
+    }
+
+    if (theta < 45) {
         return 0;
-    } else if (theta < -M_PI/6) {
+    } else if (theta < 90) {
         return 1;
-    } else if (theta < -M_PI/8) {
+    } else if (theta < 135) {
         return 2;
-    } else if (theta < 0) {
+    } else if (theta < 180) {
         return 3;
-    } else if (theta < M_PI/8) {
+    } else if (theta < 225) {
         return 4;
-    } else if (theta < M_PI/6) {
+    } else if (theta < 270) {
         return 5;
-    } else if (theta < M_PI/4) {
+    } else if (theta < 315) {
         return 6;
     } else {
         return 7;
     }
+}
+
+double SIFTDescriptor::SSD(SIFTDescriptor f1) {
+    double score = 0;
+
+    for (int i = 0; i < NUMBER_OF_GRIDS; i++) {
+        for (int j = 0; j < NUMBER_OF_BINS; j++) {
+            score += pow((f1.bins[i][j] - bins[i][j]), 2);
+        }
+    }
+
+    return score;
 }

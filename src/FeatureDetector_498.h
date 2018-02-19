@@ -20,12 +20,10 @@ private:
     cv::Mat Ix;
     cv::Mat Iy;
     std::vector<SIFTDescriptor> descriptors;
-
-    cv::Mat harrisCornerDetector();
-    cv::Mat nonMaximaSuppression(cv::Mat harrisCorners);
-    void generateFeatureDescriptions();
 public:
     FeatureDetector_498(std::string file);
+    cv::Mat harrisCornerDetector();
+    cv::Mat nonMaximaSuppression(cv::Mat harrisCorners);
     cv::Mat detectFeatures();
     std::vector<SIFTDescriptor> describeFeatures();
 };
