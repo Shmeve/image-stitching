@@ -142,11 +142,6 @@ Mat FeatureDetector_498::detectFeatures() {
     harris = harrisCornerDetector();
     suppressed = nonMaximaSuppression(harris);
 
-    imshow("Original", raw);
-    imshow("Image", image);
-
-    waitKey(0);
-
     return image;
 }
 
@@ -156,7 +151,6 @@ Mat FeatureDetector_498::detectFeatures() {
  * @return vector<SIFTDescriptor>
  */
 vector<SIFTDescriptor> FeatureDetector_498::describeFeatures() {
-    imshow("suppressed", suppressed);
     int count = 0;
     for (int i = DESCRIPTOR_MID; i < suppressed.rows - DESCRIPTOR_MID; i++) {
         for (int j = DESCRIPTOR_MID; j < suppressed.cols - DESCRIPTOR_MID; j++) {
@@ -176,7 +170,7 @@ vector<SIFTDescriptor> FeatureDetector_498::describeFeatures() {
                     }
                 }
 
-                SIFTDescriptor d = SIFTDescriptor(windowX, windowY);
+                SIFTDescriptor d = SIFTDescriptor(windowX, windowY, i, j);
                 d.generateHistograms();
                 count++;
 
@@ -184,8 +178,6 @@ vector<SIFTDescriptor> FeatureDetector_498::describeFeatures() {
             }
         }
     }
-
-    cout << count << endl;
 
     return descriptors;
 }

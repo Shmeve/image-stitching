@@ -7,7 +7,8 @@
  * @param x window of x derivative values
  * @param y window of y derivative values
  */
-SIFTDescriptor::SIFTDescriptor(float x[WINDOW_SIZE][WINDOW_SIZE], float y[WINDOW_SIZE][WINDOW_SIZE]) {
+SIFTDescriptor::SIFTDescriptor(float x[WINDOW_SIZE][WINDOW_SIZE], float y[WINDOW_SIZE][WINDOW_SIZE], int row, int col) {
+    // Init neighbourhood window
     for (int i = 0; i < WINDOW_SIZE; i++) {
         for (int j = 0; j < WINDOW_SIZE; j++) {
             this->windowX[i][j] = x[i][j];
@@ -15,11 +16,16 @@ SIFTDescriptor::SIFTDescriptor(float x[WINDOW_SIZE][WINDOW_SIZE], float y[WINDOW
         }
     }
 
+    // Init bins to 0;
     for (int i = 0; i < WINDOW_SIZE; i++) {
         for (int j = 0; j < NUMBER_OF_BINS; j++) {
             bins[i][j] = 0.0;
         }
     }
+
+    // Track interest points origin
+    this->featureRow = row;
+    this->featureCol = col;
 }
 
 /**
@@ -80,6 +86,12 @@ int SIFTDescriptor::indexForTheta(float theta) {
     }
 }
 
+/**
+ * Return a distance (SSD) between this descriptor and its input
+ *
+ * @param f1 Feature Descriptor to compare feature
+ * @return double
+ */
 double SIFTDescriptor::SSD(SIFTDescriptor f1) {
     double score = 0;
 
@@ -91,3 +103,6 @@ double SIFTDescriptor::SSD(SIFTDescriptor f1) {
 
     return score;
 }
+
+int SIFTDescriptor::getFeatureRow() const { return featureRow; }
+int SIFTDescriptor::getFeatureCol() const { return featureCol; }
