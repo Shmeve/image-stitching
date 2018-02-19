@@ -7,17 +7,28 @@
 using namespace cv;
 using namespace std;
 
+Mat matchFeatures(string img1, string img2);
+
 int main() {
-//    string img = "pano1_0008.tga";
-//    string img2 = "images/panorama/pano1_0009.tga";
-//    string img = "images/graf/img1.ppm";
-//    string img2 = "images/graf/img2.ppm";
-    string img = "images/yosemite/Yosemite1.jpg";
+    string img1 = "images/yosemite/Yosemite1.jpg";
     string img2 = "images/yosemite/Yosemite2.jpg";
-//    string img = "images/checkers.png";
+    string img3 = "images/graf/img1.ppm";
+    string img4 = "images/graf/img2.ppm";
+    string img5 = "images/graf/img4.ppm";
+
+    imwrite("results/1.png", matchFeatures(img1, img2));
+    imwrite("results/2.png", matchFeatures(img2, img1));
+    imwrite("results/3.png", matchFeatures(img3, img4));
+    imwrite("results/4.png", matchFeatures(img3, img5));
+
+    return 0;
+}
+
+Mat matchFeatures(string img1, string img2) {
+    const double DISTANCE_THRESHOLD = 3.0;
 
     // Image 1
-    FeatureDetector_498 fd = FeatureDetector_498(img);
+    FeatureDetector_498 fd = FeatureDetector_498(img1);
     Mat h = fd.detectFeatures();
     vector<SIFTDescriptor> descriptions = fd.describeFeatures();
 
@@ -38,8 +49,7 @@ int main() {
 
         for (size_t j = 0; j < descriptions2.size(); j++) {
             double ssd = descriptions2.at(j).SSD(descriptions.at(i));
-            if (ssd < 3) {
-                // TODO: Update best matches
+            if (ssd < DISTANCE_THRESHOLD) {
                 if (ssd < bestMatch) {
                     secondBestMatch = bestMatch;
                     bestMatch = ssd;
@@ -61,14 +71,13 @@ int main() {
             // Match is unambiguous
             if (ratioScore < 0.005) {
                 line(matches, Point(descriptions.at(i).getFeatureCol(), descriptions.at(i).getFeatureRow()),
-                Point(bestDescriptor->getFeatureCol()+h.cols, bestDescriptor->getFeatureRow()), Scalar(0, 0, 0, 255));
+                     Point(bestDescriptor->getFeatureCol()+h.cols, bestDescriptor->getFeatureRow()), Scalar(0, 0, 0, 255));
             }
         }
     }
 
     imshow("Matching Points", matches);
-
     waitKey(0);
 
-    return 0;
+    return matches;
 }
