@@ -1,25 +1,28 @@
 #include <iostream>
 #include <vector>
 #include <opencv2/opencv.hpp>
-#include "SIFT/SIFTDescriptor.h"
-#include "FeatureDetector_498.h"
+#include "FeatureMatching/SIFT/SIFTDescriptor.h"
+#include "FeatureMatching/FeatureDetector_498.h"
+#include "Tools/Match.h"
 
 using namespace cv;
 using namespace std;
 
-Mat matchFeatures(string img1, string img2);
+vector<Match> matchFeatures(string img1, string img2, string writeTo);
 
 int main() {
-    string img1 = "images/yosemite/Yosemite1.jpg";
-    string img2 = "images/yosemite/Yosemite2.jpg";
-    string img3 = "images/graf/img1.ppm";
-    string img4 = "images/graf/img2.ppm";
-    string img5 = "images/graf/img4.ppm";
+    string img1 = "images/rainier/Rainier1.png";
+    string img2 = "images/rainier/Rainier2.png";
+    string img3 = "images/rainier/Rainier3.png";
+    string img4 = "images/rainier/Rainier4.png";
+    string img5 = "images/rainier/Rainier5.png";
+    string img6 = "images/rainier/Rainier6.png";
 
-    imwrite("results/1.png", matchFeatures(img1, img2));
-    imwrite("results/2.png", matchFeatures(img2, img1));
-    imwrite("results/3.png", matchFeatures(img3, img4));
-    imwrite("results/4.png", matchFeatures(img3, img5));
+    matchFeatures(img1, img2, "results/1.png");
+    matchFeatures(img2, img3, "results/2.png");
+    matchFeatures(img3, img4, "results/3.png");
+    matchFeatures(img4, img5, "results/4.png");
+    matchFeatures(img5, img6, "results/5.png");
 
     return 0;
 }
@@ -31,8 +34,9 @@ int main() {
  * @param img2 Corresponding image to detect matching interest points
  * @return Mat containing both inputs with highlighted interest points and matches
  */
-Mat matchFeatures(string img1, string img2) {
+vector<Match> matchFeatures(string img1, string img2, string writeTo) {
     const double DISTANCE_THRESHOLD = 3.0;
+    vector<Match> matchesList = vector<Match>();
 
     // Image 1
     FeatureDetector_498 fd = FeatureDetector_498(img1);
@@ -77,6 +81,9 @@ Mat matchFeatures(string img1, string img2) {
 
             // Match is unambiguous
             if (ratioScore < 0.005) {
+                Match m = Match(descriptions.at(i), *bestDescriptor);
+                matchesList.push_back(m);
+
                 line(matches, Point(descriptions.at(i).getFeatureCol(), descriptions.at(i).getFeatureRow()),
                      Point(bestDescriptor->getFeatureCol()+h.cols, bestDescriptor->getFeatureRow()),
                      Scalar(0, 175, 0, 255), 1);
@@ -85,7 +92,8 @@ Mat matchFeatures(string img1, string img2) {
     }
 
     imshow("Matching Points", matches);
+    imwrite(writeTo, matches);
     waitKey(0);
 
-    return matches;
+    return matchesList;
 }
