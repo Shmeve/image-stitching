@@ -18,7 +18,7 @@ public:
     cv::Point2f project(cv::Point2f p1, cv::Mat H);
     Stitching(std::string img1, std::string img2, std::vector<Match> matches);
     cv::Mat RANSAC(int numMatches, int numIterations, int inlierThreshold);
-    cv::Mat drawMatches(int inlierThreshold);
+    cv::Mat drawMatches(int inlierThreshold, cv::Mat H);
     int getBestInlierCount() const;
     const cv::Mat &getBestHomography() const;
 };

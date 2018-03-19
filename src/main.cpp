@@ -20,16 +20,13 @@ int main() {
     string img6 = "images/rainier/Rainier6.png";
 
     vector<Match> m1 = matchFeatures(img1, img2, "results/1.png");
-    /*matchFeatures(img2, img3, "results/2.png");
-    matchFeatures(img3, img4, "results/3.png");
+    /*matchFeatures(img3, img4, "results/3.png");
     matchFeatures(img4, img5, "results/4.png");
     matchFeatures(img5, img6, "results/5.png");*/
 
-    Stitching s = Stitching(img1, img2, m1);
-    Mat m = s.RANSAC(m1.size(), 10, 15);
-    cout << s.getBestInlierCount();
-
-    imshow("res", m);
+    Stitching s1 = Stitching(img1, img2, m1);
+    Mat o1 = s1.RANSAC(m1.size(), 25, 20);
+    imshow("res", o1);
     waitKey(0);
 
     return 0;

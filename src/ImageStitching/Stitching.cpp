@@ -16,6 +16,7 @@ Mat Stitching::RANSAC(int numMatches, int numIterations, int inlierThreshold) {
     int matchesPerIterations = 4;
     vector<Match> inliers = vector<Match>();
 
+    // Estimate Homography using 4 random matches
     for (int i = 0; i < numIterations; i++) {
         vector<Point2f> img1Points;   // src
         vector<Point2f> img2Points;   // dst
@@ -36,9 +37,19 @@ Mat Stitching::RANSAC(int numMatches, int numIterations, int inlierThreshold) {
         }
     }
 
-    return drawMatches(inlierThreshold);
+    // Generate a final Homography from all inlier matches of the best estimate
+    inliers = computerInlierCount(this->bestHomography, inlierThreshold);
+    vector<Point2f> img1Points;   // src
+    vector<Point2f> img2Points;   // dst
 
-    //return Mat::zeros(1,1,0);
+    for (auto m : inliers) {
+        img1Points.emplace_back(Point_<float>(m.getPoint1().getFeatureRow(), m.getPoint1().getFeatureCol()));
+        img2Points.emplace_back(Point_<float>(m.getPoint2().getFeatureRow(), m.getPoint2().getFeatureCol()));
+    }
+
+    this->finalHomography = findHomography(img1Points, img2Points, 0);
+
+    return drawMatches(inlierThreshold, this->finalHomography);
 }
 
 Point2f Stitching::project(Point2f p1, Mat H) {
@@ -75,9 +86,9 @@ vector<Match> Stitching::computerInlierCount(Mat H, int inlierThreshold) {
     return inliers;
 }
 
-Mat Stitching::drawMatches(int inlierThreshold) {
+Mat Stitching::drawMatches(int inlierThreshold, Mat H) {
     RNG rng(12345);
-    vector<Match> inliers = computerInlierCount(this->bestHomography, inlierThreshold);
+    vector<Match> inliers = computerInlierCount(H, inlierThreshold);
     int width = this->image1.cols + this->image2.cols;
     int height = (this->image1.rows > this->image2.rows) ? this->image1.rows : this->image2.rows;
     Mat result = Mat::zeros(height, width, this->image1.type());
