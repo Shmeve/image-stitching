@@ -63,7 +63,7 @@ Point2f Stitching::project(Point2f p1, Mat H) {
 
     Mat result = projection * point;
 
-    return Point2f(result.at<float>(0,0)/result.at<float>(2,0), result.at<float>(1,0)/result.at<float>(2,0));
+    return Point_<float>(result.at<float>(0,0)/result.at<float>(2,0), result.at<float>(1,0)/result.at<float>(2,0));
 }
 
 vector<Match> Stitching::computerInlierCount(Mat H, int inlierThreshold) {
@@ -108,15 +108,15 @@ Mat Stitching::drawMatches(int inlierThreshold, Mat H) {
     return result;
 }
 
-Mat Stitching::stitch() {
+Mat Stitching::stitch(string writeTo) {
     Mat homInv = this->finalHomography.inv();
     Mat img1 = this->image1;
     Mat img2 = this->image2;
 
-    img1.convertTo(img1, CV_32FC4);
-    img2.convertTo(img2, CV_32FC4);
-
-    waitKey(0);
+    cvtColor(img1, img1, CV_BGRA2BGR);
+    cvtColor(img2, img2, CV_BGRA2BGR);
+    img1.convertTo(img1, CV_32FC3);
+    img2.convertTo(img2, CV_32FC3);
 
     // Determine size of stitched image
     vector<Point2f> corners;
@@ -151,26 +151,30 @@ Mat Stitching::stitch() {
 
     Mat stitched = Mat::zeros(img1.rows + offsety + overflowy,
                               img1.cols + offsetx + overflowx,
-                              CV_32FC4);
+                              CV_32FC3);
 
     // Copy img1 to stitched
     for (int i = 0; i < img1.rows; i++) {
         for (int j = 0; j < img1.cols; j++) {
-            Vec4f value = img1.at<Vec4f>(i, j);
-            stitched.at<Vec4f>(i+offsety, j+offsetx) = value;
+            Vec3f value = img1.at<Vec3f>(i, j);
+            stitched.at<Vec3f>(i+offsety, j+offsetx) = value;
         }
     }
 
-    for (int i = 0; i < img2.rows; i++) {
-        for (int j = 0; j < img2.cols; j++) {
-            Vec4f value = img2.at<Vec4f>(i, j);
-            Point p = project(Point(j, i), homInv);
-            stitched.at<Vec4f>(p.y+offsety, p.x+offsetx) = value;
+    for (int i = 0; i < stitched.rows; i++) {
+        for (int j = 0; j < stitched.cols; j++) {
+            Point p = project(Point(j, i), this->finalHomography);
+
+            if (pointInImage(p, img2)) {
+                stitched.at<Vec3f>(i+offsety, j+offsetx) = img2.at<Vec3f>(p.y, p.x);
+            }
         }
     }
 
+    cvtColor(stitched, stitched, CV_BGR2BGRA);
     stitched.convertTo(stitched, CV_8UC4);
 
+    imwrite(writeTo, stitched);
     return stitched;
 }
 
@@ -181,6 +185,18 @@ Mat Stitching::stitch() {
  */
 Match Stitching::getRandomMatch() {
     return this->matches.at((rand() % this->matches.size()-1) + 1);
+}
+
+bool Stitching::pointInImage(cv::Point p, cv::Mat img) {
+    if (p.x > img.cols || p.x < 0) {
+        return false;
+    }
+    else if (p.y > img.rows || p.y < 0) {
+        return false;
+    }
+    else {
+        return true;
+    }
 }
 
 int Stitching::getBestInlierCount() const {

@@ -19,17 +19,27 @@ int main() {
     string img5 = "images/rainier/Rainier5.png";
     string img6 = "images/rainier/Rainier6.png";
 
-    vector<Match> m1 = matchFeatures(img1, img2, "results/1.png");
+
     /*matchFeatures(img3, img4, "results/3.png");
     matchFeatures(img4, img5, "results/4.png");
     matchFeatures(img5, img6, "results/5.png");*/
 
+    vector<Match> m1 = matchFeatures(img1, img2, "results/1.png");
     Stitching s1 = Stitching(img1, img2, m1);
-    Mat o1 = s1.RANSAC(m1.size(), 100, 20);
-    imshow("res", o1);
+    Mat r1 = s1.RANSAC(m1.size(), 100, 20);
+    imshow("RANSAC", r1);
+    waitKey(0);
+    Mat o1 = s1.stitch("results/Stitched/1.bmp");
+    imshow("Stitched", o1);
+    waitKey(0);
 
-    Mat o2 = s1.stitch();
-    imshow("stitched", o2);
+    vector<Match> m2 = matchFeatures(img3, img2, "results/2.png");
+    s1 = Stitching(img3, img2, m2);
+    Mat r2 = s1.RANSAC(m2.size(), 100, 20);
+    imshow("RANSAC", r2);
+    waitKey(0);
+    Mat o2 = s1.stitch("results/Stitched/2.bmp");
+    imshow("Stitched", o2);
     waitKey(0);
 
     return 0;
