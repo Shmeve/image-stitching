@@ -12,6 +12,14 @@ Stitching::Stitching(string img1, string img2, vector<Match> matches) {
     this->matches = matches;
 }
 
+/**
+ * Implementation of RANSAC to estimate and refine the homography to be used for stitching
+ *
+ * @param numMatches
+ * @param numIterations
+ * @param inlierThreshold
+ * @return Mat
+ */
 Mat Stitching::RANSAC(int numMatches, int numIterations, int inlierThreshold) {
     int matchesPerIterations = 4;
     vector<Match> inliers = vector<Match>();
@@ -47,12 +55,22 @@ Mat Stitching::RANSAC(int numMatches, int numIterations, int inlierThreshold) {
         img2Points.emplace_back(Point_<float>(m.getPoint2().getFeatureCol(), m.getPoint2().getFeatureRow()));
     }
 
+    // Store final homography
     this->finalHomography = findHomography(img1Points, img2Points, 0);
 
+    // Return the concatenated images with highlighted inlier matches
     return drawMatches(inlierThreshold, this->finalHomography);
 }
 
+/**
+ * Project point p1 using a homography H producing the points location in the projected space
+ *
+ * @param p1 Point to project
+ * @param H Homography to guide projection
+ * @return Point2f
+ */
 Point2f Stitching::project(Point2f p1, Mat H) {
+    // Convert point to homogeneous space vector
     Mat point = Mat::zeros(3, 1, CV_32F);
     point.at<float>(0,0) = p1.x;
     point.at<float>(1,0) = p1.y;
@@ -63,9 +81,18 @@ Point2f Stitching::project(Point2f p1, Mat H) {
 
     Mat result = projection * point;
 
+    // Convert and return the homogeneous projection as cartesian Point
     return Point_<float>(result.at<float>(0,0)/result.at<float>(2,0), result.at<float>(1,0)/result.at<float>(2,0));
 }
 
+/**
+ * Projects all potential match points in image 1 onto image 2 and determines if it is an inlier. If the projected point
+ * has a distance from Match point 2 within the threshold is it considered an inlier and tracked.
+ *
+ * @param H Homography to guide projection
+ * @param inlierThreshold Distance threshold for determining inliers
+ * @return vector<Match>
+ */
 vector<Match> Stitching::computerInlierCount(Mat H, int inlierThreshold) {
     int count = 0;
     vector<Match> inliers = vector<Match>();
@@ -86,15 +113,25 @@ vector<Match> Stitching::computerInlierCount(Mat H, int inlierThreshold) {
     return inliers;
 }
 
+/**
+ * Custom implementation of drawMatches. Circles matching points within images and connects the circles with lines.
+ *
+ * @param inlierThreshold Distance threshold for determining inliers
+ * @param H Homography to guide projection
+ * @return Mat
+ */
 Mat Stitching::drawMatches(int inlierThreshold, Mat H) {
     RNG rng(12345);
-    vector<Match> inliers = computerInlierCount(H, inlierThreshold);
+    vector<Match> inliers = computerInlierCount(H, inlierThreshold);    // Determine inlier matches to draw
+
+    // Produce concatenated output image
     int width = this->image1.cols + this->image2.cols;
     int height = (this->image1.rows > this->image2.rows) ? this->image1.rows : this->image2.rows;
     Mat result = Mat::zeros(height, width, this->image1.type());
 
     hconcat(this->image1, this->image2, result);
 
+    // Draw matches on output image
     for (auto match : inliers) {
         Scalar color = Scalar(rng.uniform(0,255), rng.uniform(0, 255), rng.uniform(0, 255));
         Point p1 = Point(match.getPoint1().getFeatureCol(), match.getPoint1().getFeatureRow());
@@ -108,6 +145,12 @@ Mat Stitching::drawMatches(int inlierThreshold, Mat H) {
     return result;
 }
 
+/**
+ * Stitches class members image1 and image2 together.
+ *
+ * @param writeTo Location to save produced panorama
+ * @return Mat
+ */
 Mat Stitching::stitch(string writeTo) {
     Mat homInv = this->finalHomography.inv();
     Mat img1 = this->image1;
@@ -149,6 +192,7 @@ Mat Stitching::stitch(string writeTo) {
     offsetx = abs(offsetx);
     offsety = abs(offsety);
 
+    // Initialize stiched image matrix
     Mat stitched = Mat::zeros(img1.rows + offsety + overflowy,
                               img1.cols + offsetx + overflowx,
                               CV_32FC3);
@@ -161,6 +205,7 @@ Mat Stitching::stitch(string writeTo) {
         }
     }
 
+    // Find points on panorama output which map to img2 and populate their pixels with information from img2
     for (int i = 0; i < stitched.rows; i++) {
         for (int j = 0; j < stitched.cols; j++) {
             Point p = project(Point(j, i), this->finalHomography);
@@ -187,6 +232,13 @@ Match Stitching::getRandomMatch() {
     return this->matches.at((rand() % this->matches.size()-1) + 1);
 }
 
+/**
+ * Check if the components of Point p fall within the boundaries of image img
+ *
+ * @param p
+ * @param img
+ * @return bool
+ */
 bool Stitching::pointInImage(cv::Point p, cv::Mat img) {
     if (p.x > img.cols || p.x < 0) {
         return false;

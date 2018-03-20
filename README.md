@@ -1,7 +1,7 @@
-# COMP 498 - Assignment 2
+# COMP 498 - Project
 Steve Ferreira, 27477546  
 Section: Winter 2018 - GG  
-Date: February 13, 2018  
+Date: March 20, 2018  
 
 **I certify that this submission is my original work and meets the Faculty's Expectations of Originality.**
 
