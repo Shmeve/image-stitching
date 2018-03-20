@@ -12,6 +12,8 @@ using namespace std;
 vector<Match> matchFeatures(string img1, string img2, string writeTo);
 
 int main() {
+    const int numIterations = 50;
+    const int threshold = 15;
     string img1 = "images/rainier/Rainier1.png";
     string img2 = "images/rainier/Rainier2.png";
     string img3 = "images/rainier/Rainier3.png";
@@ -26,16 +28,16 @@ int main() {
 
     vector<Match> m1 = matchFeatures(img1, img2, "results/1.png");
     Stitching s1 = Stitching(img1, img2, m1);
-    Mat r1 = s1.RANSAC(m1.size(), 100, 20);
+    Mat r1 = s1.RANSAC(m1.size(), numIterations, threshold, "results/RANSAC/1.bmp");
     imshow("RANSAC", r1);
     waitKey(0);
     Mat o1 = s1.stitch("results/Stitched/1.bmp");
     imshow("Stitched", o1);
     waitKey(0);
 
-    vector<Match> m2 = matchFeatures(img3, img2, "results/2.png");
-    s1 = Stitching(img3, img2, m2);
-    Mat r2 = s1.RANSAC(m2.size(), 100, 20);
+    vector<Match> m2 = matchFeatures(img3, img4, "results/2.png");
+    s1 = Stitching(img3, img4, m2);
+    Mat r2 = s1.RANSAC(m2.size(), numIterations, threshold, "results/RANSAC/2.bmp");
     imshow("RANSAC", r2);
     waitKey(0);
     Mat o2 = s1.stitch("results/Stitched/2.bmp");

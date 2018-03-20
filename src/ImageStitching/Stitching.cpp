@@ -20,7 +20,7 @@ Stitching::Stitching(string img1, string img2, vector<Match> matches) {
  * @param inlierThreshold
  * @return Mat
  */
-Mat Stitching::RANSAC(int numMatches, int numIterations, int inlierThreshold) {
+cv::Mat Stitching::RANSAC(int numMatches, int numIterations, int inlierThreshold, string writeTo) {
     int matchesPerIterations = 4;
     vector<Match> inliers = vector<Match>();
 
@@ -59,7 +59,9 @@ Mat Stitching::RANSAC(int numMatches, int numIterations, int inlierThreshold) {
     this->finalHomography = findHomography(img1Points, img2Points, 0);
 
     // Return the concatenated images with highlighted inlier matches
-    return drawMatches(inlierThreshold, this->finalHomography);
+    Mat o = drawMatches(inlierThreshold, this->finalHomography);
+    imwrite(writeTo, o);
+    return o;
 }
 
 /**
@@ -249,6 +251,10 @@ bool Stitching::pointInImage(cv::Point p, cv::Mat img) {
     else {
         return true;
     }
+}
+
+Mat Stitching::alphaBlend(Mat img, bool left) {
+
 }
 
 int Stitching::getBestInlierCount() const {

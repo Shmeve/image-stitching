@@ -26,8 +26,24 @@ Then, CMake can be used in the command line to generate build files for any envi
     - Run `cmake -G` to see a list of possible generators, eg. `Xcode`, `Unix Makefiles`, versions of Visual Studio, etc.
 5. Build the project using whichever build system you chose.
 
+## Objectives
+1. Implement [Harris Corner Detection](https://en.wikipedia.org/wiki/Harris_Corner_Detector) algorithm.
+2. Implement simple keypoint descriptor based on [SIFT](https://en.wikipedia.org/wiki/Scale-invariant_feature_transform).
+3. Find matching keypoint descriptors between two images.
+4. Determine [Homography](https://en.wikipedia.org/wiki/Homography_(computer_vision)) for stitching using [RANSAC](https://en.wikipedia.org/wiki/Random_sample_consensus).
+5. Stitch images together.
+
 ## Results
-See included report.
+### Matching Keypoints
+![Raw Matches][raw]
+### Refined Inlier Matches
+![Refined Matches][refined]
+### Final Panorama
+![Final Result][final]
 
 ## Notes
 This assignment has been tested on Linux, using OpenCV 3.4.0, CMake 3.10.2, Make 4.2.1
+
+[raw]: https://github.com/Shmeve/image-stitching/blob/master/results/README/Step_1_and_2.png?raw=true
+[refined]: https://github.com/Shmeve/image-stitching/blob/master/results/README/Step_3.bmp?raw=true
+[final]: https://github.com/Shmeve/image-stitching/blob/master/results/README/Step_4.bmp?raw=true
