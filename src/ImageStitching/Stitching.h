@@ -19,6 +19,7 @@ public:
     Stitching(std::string img1, std::string img2, std::vector<Match> matches);
     cv::Mat RANSAC(int numMatches, int numIterations, int inlierThreshold);
     cv::Mat drawMatches(int inlierThreshold, cv::Mat H);
+    cv::Mat stitch();
     int getBestInlierCount() const;
     const cv::Mat &getBestHomography() const;
 };

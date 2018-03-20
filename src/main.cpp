@@ -25,8 +25,11 @@ int main() {
     matchFeatures(img5, img6, "results/5.png");*/
 
     Stitching s1 = Stitching(img1, img2, m1);
-    Mat o1 = s1.RANSAC(m1.size(), 25, 20);
+    Mat o1 = s1.RANSAC(m1.size(), 100, 20);
     imshow("res", o1);
+
+    Mat o2 = s1.stitch();
+    imshow("stitched", o2);
     waitKey(0);
 
     return 0;
